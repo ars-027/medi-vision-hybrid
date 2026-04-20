@@ -1,0 +1,11 @@
+Scan_ID,Dice_Score,Hausdorff_95_mm,Inference_Time_sec
+spleen_53.nii.gz,0.8708,4.5826,4.61
+spleen_56.nii.gz,0.5969,28.6723,1.69
+spleen_59.nii.gz,0.8432,11.1803,4.15
+spleen_6.nii.gz,0.9215,2.8284,3.92
+spleen_60.nii.gz,0.9427,2.2361,5.29
+spleen_61.nii.gz,0.8862,3.6056,5.27
+spleen_62.nii.gz,0.8472,7.4833,2.53
+spleen_63.nii.gz,0.8696,10.4881,2.76
+spleen_8.nii.gz,0.9095,5.0,2.84
+spleen_9.nii.gz,0.9018,7.0,2.84

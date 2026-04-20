@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medi-Vision Hybrid | Enterprise Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #f8fafc; --surface-color: #ffffff;
+            --primary: #0ea5e9; --primary-hover: #0284c7;
+            --secondary: #f1f5f9; --text-main: #0f172a;
+            --text-muted: #64748b; --border: #e2e8f0;
+            --success: #10b981; --error: #ef4444; --warning: #f59e0b;
+            --viewer-bg: #0b1120; --radius: 12px;
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+
+        /* Sidebar */
+        .sidebar { width: 260px; background-color: var(--surface-color); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 24px; flex-shrink: 0; z-index: 20;}
+        .logo { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 40px; display: flex; align-items: center; gap: 10px; letter-spacing: -0.5px;}
+        .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--primary), #3b82f6); border-radius: 8px; color: white; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold;}
+        .nav-item { padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px;}
+        .nav-item:hover { background-color: var(--secondary); color: var(--text-main); }
+        .nav-item.active { background-color: #f0f9ff; color: var(--primary); font-weight: 600;}
+        
+        .server-status { margin-top: auto; padding: 16px; border-radius: 8px; background-color: var(--bg-color); border: 1px solid var(--border); font-size: 13px; display: flex; align-items: center; gap: 8px; font-weight: 500; }
+        .status-indicator { width: 10px; height: 10px; border-radius: 50%; background-color: var(--warning); box-shadow: 0 0 8px rgba(0,0,0,0.1); }
+
+        /* Main Workspace */
+        .workspace { flex: 1; padding: 32px 40px; overflow-y: auto; display: flex; flex-direction: column;}
+        .header { margin-bottom: 32px; display: flex; justify-content: space-between; align-items: flex-end;}
+        .header h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px;}
+        .header p { color: var(--text-muted); font-size: 15px; }
+
+        /* Views */
+        .view-section { display: none; height: 100%; flex-direction: column; }
+        .view-section.active { display: flex; }
+
+        /* Diagnostic Grid */
+        .grid-container { display: grid; grid-template-columns: 350px 1fr; gap: 24px; min-height: 500px; flex: 1;}
+        .controls-panel { display: flex; flex-direction: column; gap: 20px; }
+        .card { background: var(--surface-color); padding: 24px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); }
+        .card-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.5px;}
+
+        /* Drop Zone */
+        .drop-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 32px 20px; text-align: center; cursor: pointer; transition: all 0.2s ease; background-color: var(--bg-color); display: flex; flex-direction: column; align-items: center; justify-content: center;}
+        .drop-zone:hover, .drop-zone.dragover { border-color: var(--primary); background-color: #f0f9ff; }
+        .drop-zone input { display: none; }
+        .drop-icon { font-size: 28px; margin-bottom: 12px; }
+        .file-name-display { font-size: 14px; font-weight: 600; margin-top: 12px; color: var(--primary); word-break: break-all; }
+        
+        /* Metadata & Buttons */
+        .metadata-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--secondary); font-size: 13px; }
+        .metadata-row:last-child { border-bottom: none; }
+        .meta-label { color: var(--text-muted); font-weight: 500; }
+        .meta-value { font-weight: 600; color: var(--text-main); text-align: right;}
+
+        .btn-group { display: flex; gap: 12px; margin-top: 20px; }
+        .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center;}
+        .btn-primary { background-color: var(--primary); color: white; box-shadow: 0 2px 4px rgba(14, 165, 233, 0.2);}
+        .btn-primary:hover:not(:disabled) { background-color: var(--primary-hover); }
+        .btn-primary:disabled { background-color: #94a3b8; cursor: not-allowed; box-shadow: none;}
+        .btn-outline { background-color: transparent; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-outline:hover:not(:disabled) { background-color: var(--secondary); }
+        .btn-outline:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Viewer Panel */
+        .viewer-panel { background: var(--surface-color); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); display: flex; flex-direction: column; overflow: hidden; position: relative;}
+        .viewer-header { padding: 16px 24px; border-bottom: 1px solid var(--border); background-color: var(--surface-color); font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+        .badge { padding: 4px 8px; background: var(--secondary); border-radius: 4px; font-size: 12px; font-weight: 600; color: var(--text-muted);}
+        
+        .viewer-content { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 24px; background-color: var(--viewer-bg); position: relative; overflow-y: auto; gap: 24px; }
+        
+        .empty-state { color: #64748b; text-align: center; font-size: 14px; display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: auto; margin-bottom: auto;}
+        .result-image { width: 100%; height: auto; max-height: 400px; object-fit: contain; flex-shrink: 0; display: none; animation: fadeIn 0.4s ease-out; }
+
+        /* Loading */
+        .loading-overlay { position: absolute; inset: 0; background: rgba(11, 17, 32, 0.85); backdrop-filter: blur(4px); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 10; }
+        .spinner { width: 48px; height: 48px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        .error-message { background: #fef2f2; color: var(--error); font-size: 13px; margin-top: 16px; padding: 12px; border-radius: 8px; border: 1px solid #fecaca; display: none; font-weight: 500;}
+
+        /* Tables */
+        .table-container { background: var(--surface-color); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { padding: 16px 24px; border-bottom: 1px solid var(--border); }
+        th { background-color: var(--secondary); font-weight: 600; font-size: 13px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        td { font-size: 14px; font-weight: 500; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background-color: #f8fafc; }
+        .pill { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; display: inline-block; }
+        .pill-blue { background: #e0f2fe; color: #0284c7; }
+        .pill-gray { background: #f1f5f9; color: #475569; }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="logo"><div class="logo-icon">M</div>Medi-Vision</div>
+        <div class="nav-item active" id="nav-diagnostic" onclick="switchView('diagnostic')">⚕️ Diagnostic Workspace</div>
+        <div class="nav-item" id="nav-directory" onclick="switchView('directory')">📁 Patient Directory</div>
+        <div class="nav-item" id="nav-audit" onclick="switchView('audit')">📜 Audit Log</div>
+        
+        <div class="server-status">
+            <div class="status-indicator" id="status-dot"></div>
+            <span id="status-text">Connecting...</span>
+        </div>
+    </aside>
+
+    <main class="workspace">
+        
+        <div id="view-diagnostic" class="view-section active">
+            <div class="header">
+                <div>
+                    <h1>Diagnostic Workspace</h1>
+                </div>
+            </div>
+
+            <div class="grid-container">
+                <div class="controls-panel">
+                    <div class="card">
+                        <div class="card-title">Multi-Modal Ingestion</div>
+                        <label class="drop-zone" id="drop-zone">
+                            <div class="drop-icon" id="drop-icon">📥</div>
+                            <div id="drop-text" style="font-weight: 500;">Drop CT Volume or X-Ray Image</div>
+                            <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Accepts: .nii.gz, .png, .jpg</div>
+                            <input type="file" id="file-input" accept=".nii.gz,.nii,.png,.jpg,.jpeg">
+                            <div class="file-name-display" id="file-name"></div>
+                        </label>
+                        <div class="error-message" id="error-msg"></div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">File Metadata</div>
+                        <div class="metadata-row">
+                            <span class="meta-label">Detected Modality</span>
+                            <span class="meta-value" id="meta-type">--</span>
+                        </div>
+                        
+                        <div class="metadata-row" style="flex-direction: column; align-items: flex-start; gap: 8px; border-bottom: none; padding-bottom: 0;">
+                            <span class="meta-label">Assign Patient Context</span>
+                            <select id="patient-selector" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-family: inherit; font-size: 13px; outline: none; background: #f8fafc;">
+                                <option value="None provided">-- Analyze Blind (No Context) --</option>
+                            </select>
+                        </div>
+                        
+                        <div class="metadata-row">
+                            <span class="meta-label">Engine Ready</span>
+                            <span class="meta-value" id="meta-ready" style="color: var(--warning);">Pending</span>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-outline" id="reset-btn" onclick="resetWorkspace()" disabled>Clear</button>
+                            <button class="btn btn-primary" id="analyze-btn" disabled>Execute AI Routing</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="viewer-panel">
+                    <div class="viewer-header">
+                        <span>Intelligent Overlay Viewer</span>
+                        <span class="badge" id="viewer-badge">AWAITING INPUT</span>
+                    </div>
+                    <div class="viewer-content">
+                        <div class="empty-state" id="empty-state">
+                            <div style="font-size: 32px; opacity: 0.5;">🩻</div>
+                            <span>Upload a medical volume or image to initialize.</span>
+                        </div>
+                        <img id="result-img" class="result-image">
+                        <div class="loading-overlay" id="loading">
+                            <div class="spinner"></div>
+                            <div style="font-weight: 600;">Engine Processing...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-directory" class="view-section">
+            <div class="header">
+                <div>
+                    <h1>Patient Directory</h1>
+                    <p>Live Electronic Health Records (EHR) imported from Local Data Store.</p>
+                </div>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Patient ID</th>
+                            <th>Age</th>
+                            <th>Gender</th>
+                            <th>Known Condition / Findings</th>
+                        </tr>
+                    </thead>
+                    <tbody id="patient-table-body">
+                        <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Loading EHR Data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-audit" class="view-section">
+            <div class="header">
+                <div>
+                    <h1>System Audit Log</h1>
+                    <p>Immutable record of all AI triage events during the current session.</p>
+                </div>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Scan ID</th>
+                            <th>Timestamp</th>
+                            <th>Patient Identity</th>
+                            <th>Modality</th>
+                            <th>Primary Finding</th>
+                            <th>Confidence</th>
+                        </tr>
+                    </thead>
+                    <tbody id="audit-table-body">
+                        <tr id="empty-audit"><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 40px;">No scans processed in this session yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const API_URL = "http://localhost:8000";
+        let isEngineOnline = false;
+
+        // View Switcher
+        function switchView(view) {
+            document.getElementById('nav-diagnostic').classList.toggle('active', view === 'diagnostic');
+            document.getElementById('nav-directory').classList.toggle('active', view === 'directory');
+            document.getElementById('nav-audit').classList.toggle('active', view === 'audit');
+            
+            document.getElementById('view-diagnostic').classList.toggle('active', view === 'diagnostic');
+            document.getElementById('view-directory').classList.toggle('active', view === 'directory');
+            document.getElementById('view-audit').classList.toggle('active', view === 'audit');
+        }
+
+        // Fetch Patient Data & Populate Dropdown
+        async function fetchPatients() {
+            try {
+                const response = await fetch(`${API_URL}/patients`);
+                const data = await response.json();
+                
+                const tbody = document.getElementById('patient-table-body');
+                tbody.innerHTML = '';
+                
+                const selector = document.getElementById('patient-selector');
+                if (selector.options.length <= 1) { 
+                    data.patients.forEach(p => {
+                        let pid = p["Patient ID"] || "UNK";
+                        let cond = p.Condition || "None noted";
+                        
+                        tbody.innerHTML += `
+                            <tr>
+                                <td style="color: var(--primary); font-weight: 600;">${pid}</td>
+                                <td>${p.Age || "--"}</td>
+                                <td><span class="pill pill-gray">${p.Gender || "--"}</span></td>
+                                <td><span class="pill pill-blue">${cond}</span></td>
+                            </tr>
+                        `;
+                        
+                        let contextStr = `Patient ID: ${pid}, Age: ${p.Age}, Gender: ${p.Gender}, Known History: ${cond}`;
+                        selector.innerHTML += `<option value="${contextStr}">${pid} - ${cond}</option>`;
+                    });
+                }
+            } catch (e) {
+                document.getElementById('patient-table-body').innerHTML = `<tr><td colspan="4" style="color: red; text-align: center;">Error connecting to Local Database.</td></tr>`;
+            }
+        }
+        fetchPatients();
+
+        // Server Health Check
+        async function checkServer() {
+            try {
+                await fetch(`${API_URL}/docs`, { method: 'GET', mode: 'no-cors' });
+                document.getElementById('status-dot').style.backgroundColor = 'var(--success)';
+                document.getElementById('status-text').textContent = 'Engine Online';
+                isEngineOnline = true;
+                if(document.getElementById('file-input').files.length > 0) document.getElementById('analyze-btn').disabled = false;
+            } catch (e) {
+                document.getElementById('status-dot').style.backgroundColor = 'var(--error)';
+                document.getElementById('status-text').textContent = 'Engine Offline';
+                isEngineOnline = false;
+            }
+        }
+        checkServer(); setInterval(checkServer, 5000);
+
+        // Drag & Drop Logic
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault(); dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; handleFile(); }
+        });
+        fileInput.addEventListener('change', handleFile);
+
+        function handleFile() {
+            if (!fileInput.files.length) return;
+            const file = fileInput.files[0];
+            
+            document.getElementById('drop-icon').style.display = 'none';
+            document.getElementById('drop-text').style.display = 'none';
+            document.getElementById('file-name').textContent = file.name;
+            
+            let modType = "Unknown";
+            if(file.name.endsWith('.nii.gz')) modType = "3D NIfTI Volume (UNETR Path)";
+            else if(file.name.match(/\.(png|jpg|jpeg)$/i)) modType = "2D Radiograph (Vision Path)";
+            else return document.getElementById('error-msg').innerHTML = "Invalid format.", document.getElementById('error-msg').style.display = 'block';
+            
+            document.getElementById('meta-type').textContent = modType;
+            document.getElementById('meta-ready').textContent = "Ready";
+            document.getElementById('meta-ready').style.color = "var(--success)";
+            
+            document.getElementById('reset-btn').disabled = false;
+            document.getElementById('analyze-btn').disabled = false;
+        }
+
+        function resetWorkspace() {
+            fileInput.value = '';
+            document.getElementById('drop-icon').style.display = 'block';
+            document.getElementById('drop-text').style.display = 'block';
+            document.getElementById('file-name').textContent = '';
+            document.getElementById('meta-type').textContent = '--';
+            document.getElementById('patient-selector').selectedIndex = 0; 
+            document.getElementById('meta-ready').textContent = 'Pending';
+            document.getElementById('meta-ready').style.color = "var(--warning)";
+            document.getElementById('empty-state').style.display = 'flex';
+            document.getElementById('result-img').style.display = 'none';
+            document.getElementById('analyze-btn').disabled = true;
+            document.getElementById('reset-btn').disabled = true;
+            
+            const oldPanel = document.getElementById('diagnostic-panel');
+            if(oldPanel) oldPanel.remove();
+        }
+
+        // Execution
+        document.getElementById('analyze-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('analyze-btn');
+            btn.disabled = true; btn.textContent = "Routing Data...";
+            document.getElementById('empty-state').style.display = 'none';
+            document.getElementById('loading').style.display = 'flex';
+
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+            formData.append("patient_context", document.getElementById('patient-selector').value);
+
+            try {
+                const res = await fetch(`${API_URL}/predict`, { method: "POST", body: formData });
+                if (!res.ok) throw new Error(`API Error: ${res.status}`);
+                const data = await res.json();
+                
+                document.getElementById('result-img').src = "data:image/png;base64," + data.image_base64;
+                
+                let diag = data.diagnosis;
+                let riskColor = diag.risk_level === 'High' ? '#ef4444' : diag.risk_level === 'Medium' ? '#f59e0b' : '#10b981';
+                
+                let cleanFinding = diag.primary_finding ? diag.primary_finding.replace(/\*\*/g, '') : "Pending analysis...";
+                let cleanAnalysis = diag.detailed_analysis ? diag.detailed_analysis.replace(/\*\*/g, '') : "Pending details...";
+                
+                const panel = document.createElement('div');
+                panel.id = 'diagnostic-panel';
+                panel.style.width = '100%';
+                
+                panel.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; padding: 16px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; margin-top: 20px;">
+                        <div><div style="font-size: 12px; color: var(--text-muted); font-weight: 700;">CALCULATED VOLUME</div>
+                        <div style="font-size: 20px; font-weight: 700;">${data.volume_cc}</div></div>
+                        
+                        <div style="text-align: right;">
+                            <div style="font-size: 12px; color: ${riskColor}; font-weight: 700;">RISK (CONFIDENCE: ${diag.confidence_score || 'N/A'})</div>
+                            <div style="font-size: 20px; font-weight: 800; color: ${riskColor};">${diag.risk_level}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 16px; padding: 20px; background: white; border: 1px solid var(--border); border-radius: 8px;">
+                        <h3 style="font-size: 14px; color: #0f172a; text-transform: uppercase;">Primary Finding</h3>
+                        <p style="font-size: 14px; margin-bottom: 16px; color: var(--text-main); font-weight: 500; border-left: 3px solid ${riskColor}; padding-left: 12px;">${cleanFinding}</p>
+                        
+                        <h3 style="font-size: 14px; color: #64748b; text-transform: uppercase;">Detailed Radiomics</h3>
+                        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;">${cleanAnalysis}</p>
+                        
+                        <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px dashed #cbd5e1;">
+                            <span style="font-size: 13px; font-weight: 700; color: #0f172a;">Recommendation:</span>
+                            <span style="font-size: 13px; color: var(--primary); font-weight: 600;">${diag.recommendation}</span>
+                        </div>
+
+                        <button id="export-pdf-btn" class="btn btn-outline" style="width: 100%; margin-top: 20px; border-color: var(--primary); color: var(--primary); background: #f0f9ff;">
+                            📄 Export Official Clinical Report (PDF)
+                        </button>
+                    </div>
+                `;
+                
+                const oldPanel = document.getElementById('diagnostic-panel');
+                if(oldPanel) oldPanel.remove();
+                document.querySelector('.viewer-content').appendChild(panel);
+                
+                document.getElementById('result-img').style.display = 'block';
+                document.getElementById('viewer-badge').textContent = "DIAGNOSIS COMPLETE";
+
+               // ==========================================
+                // WRITE TO AUDIT LOG
+                // ==========================================
+                const auditBody = document.getElementById('audit-table-body');
+                const emptyRow = document.getElementById('empty-audit');
+                if(emptyRow) emptyRow.remove();
+
+                // 🚨 NEW: Generate Unique Accession/Scan ID
+                const scanId = "MV-" + Math.floor(10000 + Math.random() * 90000); 
+
+                const timestamp = new Date().toLocaleTimeString();
+                const patientCtxStr = document.getElementById('patient-selector').value;
+                const patientDisplay = patientCtxStr !== "None provided" ? patientCtxStr.split(',')[0] : "Unidentified (Blind)";
+                const modalityDisplay = document.getElementById('meta-type').textContent.split(' ')[0]; 
+
+                const newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                    <td style="font-weight: 700; color: var(--primary);">${scanId}</td>
+                    <td style="color: var(--text-muted); font-size: 13px; font-weight: 600;">${timestamp}</td>
+                    <td style="font-weight: 500;">${patientDisplay}</td>
+                    <td><span class="pill pill-gray">${modalityDisplay}</span></td>
+                    <td style="font-weight: 600; color: ${riskColor};">${cleanFinding}</td>
+                    <td style="font-weight: 600;">${diag.confidence_score || 'N/A'}</td>
+                `;
+                auditBody.insertBefore(newRow, auditBody.firstChild);
+
+                // ==========================================
+                // PDF GENERATION LOGIC
+                // ==========================================
+                document.getElementById('export-pdf-btn').addEventListener('click', () => {
+                    const pdfBtn = document.getElementById('export-pdf-btn');
+                    pdfBtn.textContent = "Generating PDF...";
+                    pdfBtn.disabled = true;
+
+                    const printElement = document.createElement('div');
+                    // Tighter padding and scaled down fonts to guarantee a 1-page fit
+                    printElement.style.padding = '10px';
+                    printElement.style.fontFamily = 'Inter, sans-serif';
+                    printElement.style.color = '#0f172a';
+                    
+                    const reportDate = new Date().toLocaleString();
+
+                    // Every major div has "page-break-inside: avoid" to prevent awkward splits
+                    printElement.innerHTML = `
+                        <div style="border-bottom: 2px solid #0ea5e9; padding-bottom: 12px; margin-bottom: 16px; page-break-inside: avoid;">
+                            <h1 style="font-size: 22px; margin: 0; color: #0ea5e9;">Medi-Vision Hybrid Engine</h1>
+                            <p style="margin: 4px 0 0 0; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Automated Radiological Triage & Multi-Modal Analysis Report</p>
+                        </div>
+                        
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 16px; font-size: 12px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; page-break-inside: avoid;">
+                            <div>
+                                <strong style="color: #0ea5e9; font-size: 14px;">SCAN ID: ${scanId}</strong><br><br>
+                                <strong style="color: #64748b;">DATE GENERATED:</strong><br> ${reportDate}<br><br>
+                                <strong style="color: #64748b;">MODALITY:</strong><br> ${document.getElementById('meta-type').textContent}
+                            </div>
+                            <div style="text-align: right;">
+                                <strong style="color: #64748b;">PATIENT PROFILE:</strong><br>
+                                <span style="font-weight: 600;">${patientCtxStr !== "None provided" ? patientCtxStr : "Unidentified ER Walk-in (Blind Analysis)"}</span>
+                            </div>
+                        </div>
+
+                        <div style="text-align: center; margin-bottom: 20px; page-break-inside: avoid; background: #0b1120; padding: 8px; border-radius: 8px;">
+                            <img src="${document.getElementById('result-img').src}" style="width: 100%; max-height: 260px; object-fit: contain;">
+                        </div>
+
+                        <div style="margin-bottom: 16px; page-break-inside: avoid;">
+                            <h2 style="font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 8px; color: #0f172a;">1. Primary AI Finding</h2>
+                            <p style="font-size: 13px; font-weight: 600; color: ${riskColor}; margin-bottom: 4px;">${cleanFinding}</p>
+                            <p style="font-size: 12px; margin: 0; color: #475569;"><strong>Calculated Volume:</strong> ${data.volume_cc} | <strong>Risk Level:</strong> ${diag.risk_level} (Confidence: ${diag.confidence_score || 'N/A'})</p>
+                        </div>
+
+                        <div style="margin-bottom: 16px; page-break-inside: avoid;">
+                            <h2 style="font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 8px; color: #0f172a;">2. Detailed Radiomics</h2>
+                            <p style="font-size: 12px; line-height: 1.5; color: #334155; margin: 0;">${cleanAnalysis}</p>
+                        </div>
+
+                        <div style="margin-bottom: 30px; page-break-inside: avoid;">
+                            <h2 style="font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 8px; color: #0f172a;">3. Clinical Recommendation</h2>
+                            <div style="background: #f0f9ff; border: 1px solid #bae6fd; padding: 10px; border-radius: 6px;">
+                                <p style="font-size: 12px; font-weight: 600; color: #0284c7; margin: 0;">${diag.recommendation}</p>
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; font-size: 10px; color: #64748b; text-align: center; page-break-inside: avoid;">
+                            <p style="margin-bottom: 30px;"><em>*This report was generated by the Medi-Vision Hybrid AI Engine for triage purposes. It must be reviewed and countersigned by a certified radiologist prior to clinical decision making.*</em></p>
+                            
+                            <div style="display: flex; justify-content: space-between; padding: 0 40px;">
+                                <div style="text-align: center; width: 200px;">
+                                    <div style="border-bottom: 1px solid #0f172a; margin-bottom: 4px; height: 20px;"></div>
+                                    <strong>AI System Validation</strong>
+                                </div>
+                                <div style="text-align: center; width: 200px;">
+                                    <div style="border-bottom: 1px solid #0f172a; margin-bottom: 4px; height: 20px;"></div>
+                                    <strong>Attending Physician Signature</strong>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    // Added specific PDF layout rules: Margins, Letter size, and 'avoid-all' mode
+                    const opt = {
+                        margin:       [0.4, 0.4, 0.4, 0.4], 
+                        filename:     `MediVision_Report_${scanId}.pdf`, // 🚨 The downloaded file is now named after the Scan ID!
+                        image:        { type: 'jpeg', quality: 0.98 },
+                        html2canvas:  { scale: 2, useCORS: true },
+                        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
+                        pagebreak:    { mode: 'avoid-all' } 
+                    };
+
+                    html2pdf().set(opt).from(printElement).save().then(() => {
+                        pdfBtn.textContent = "📄 Export Official Clinical Report (PDF)";
+                        pdfBtn.disabled = false;
+                    });
+                });
+               
+
+            } catch (e) {
+                alert(e.message);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+                btn.textContent = "Execute AI Routing";
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
