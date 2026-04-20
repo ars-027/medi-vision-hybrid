@@ -30,7 +30,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 # 1. INITIALIZE HYBRID AI ENGINE & APIs
 # ==========================================
 # 🚨 PASTE YOUR GOOGLE AI STUDIO API KEY BELOW 🚨
-genai.configure(api_key="AIzaSyA9rpbHPVKw7iDZW0kz4kZe5TqfcUATPIg")
+genai.configure(api_key="")
 
 generation_config = {"response_mime_type": "application/json"}
 llm_model = genai.GenerativeModel("gemini-2.5-flash", generation_config=generation_config)
